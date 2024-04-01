@@ -67,7 +67,7 @@ function main() {
       } else if (st.t > now) {
         setTimeout(function() {
           main.textContent = st.d;
-          if (st.aid && audioContext != null) {
+          if (st.aid && hasAudio) {
             var a = document.getElementById(st.aid);
             a.currentTime = 0;
             a.play();
@@ -75,7 +75,7 @@ function main() {
         }, st.t - now);
       } else {
         main.textContent = st.d;
-        if (st.aid && audioContext != null) {
+        if (st.aid && hasAudio) {
           var a = document.getElementById(st.aid);
           a.currentTime = (now - st.t) / 1000;
           a.play();
@@ -96,6 +96,9 @@ function main() {
     if (audioContext == null) {
       if (unmute.checked) {
         audioContext = new AudioContext();
+        audioContext.addEventListener('statechange', function(evt) {
+          if (audioContext.state == 'running' && !hasAudio) hasAudio = true;
+        });
         audioVolume = new GainNode(audioContext, {gain: newGain});
         audioVolume.connect(audioContext.destination);
         var background = generateBackground(audioContext);
@@ -108,11 +111,13 @@ function main() {
             audioSources['d' + i + v] = element;
           });
         }
-        audioContext.resume();
         background.start();
+        audioContext.resume();
       } else {
         return;
       }
+    } else if (!hasAudio && unmute.checked) {
+      audioContext.resume();
     }
     audioVolume.gain.value = newGain;
   }
@@ -122,9 +127,15 @@ function main() {
   var audioContext = null;
   var audioSources = {};
   var audioVolume = null;
+  var hasAudio = false;
   unmute.addEventListener('click', updateVolume);
   volume.addEventListener('input', updateVolume);
-  unmute.checked = false;
+  updateVolume();
+  if (unmute.checked) {
+    setTimeout(function() {
+      if (!hasAudio) unmute.checked = false;
+    }, 100);
+  }
   update(Math.floor(Date.now() / 5000) * 5);
 }
 window.addEventListener('DOMContentLoaded', main)
