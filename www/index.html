@@ -9,6 +9,15 @@ body { position: fixed; top: 0; left: 0; bottom: 0; right: 0; display: flex;
   align-items: center; justify-content: center; }
 main { font: 20vmin/1 monospace; text-shadow: 0 0 2vmin gray;
   white-space: pre; }
+.hidden { display: none; }
+aside { position: fixed; bottom: 3vmin; left: 3vmin; font-size: 3vmin;
+  opacity: 0.25; transition: opacity linear 0.1s; }
+aside:hover { opacity: 1; }
+label { display: flex; align-items: center; height: 5vmin; }
+input[type=checkbox] { display: none; }
+input[type=checkbox]:checked ~ .when-unchecked { display: none; }
+input[type=checkbox]:not(:checked) ~ .when-checked { display: none; }
+.clickable { cursor: pointer; }
     </style>
     <script type="application/javascript">
 function main() {
@@ -37,7 +46,8 @@ function main() {
     if (result != null) {
       var data = result.get('d');
       renderStates(data.split('').map(function(ch, i) {
-        return {t: bt + i * 800, d: rightpad(data.substr(0, i + 1), 5)};
+        return {t: bt + i * 800, d: rightpad(data.substr(0, i + 1), 5),
+                a: ch};
       }), now);
     } else {
       renderStates([{t: bt, d: '     '}], now);
@@ -46,28 +56,111 @@ function main() {
   }
   function renderStates(states, now) {
     for (var i = 1; i <= states.length; i++) {
-      states[i - 1].x = (i == states.length) ? Infinity : states[i].t;
+      var st = states[i - 1];
+      st.x = (i == states.length) ? Infinity : states[i].t;
+      st.aid = !st.a ? null :
+        'a-d' + st.a + (i == states.length ? 'f' : 'c');
     }
-    states.forEach(function(st) {
+    states.forEach(function(st, i) {
       if (st.x < now) {
         return;
       } else if (st.t > now) {
         setTimeout(function() {
           main.textContent = st.d;
+          if (st.aid && audioContext != null) {
+            var a = document.getElementById(st.aid);
+            a.currentTime = 0;
+            a.play();
+          }
         }, st.t - now);
       } else {
         main.textContent = st.d;
+        if (st.aid && audioContext != null) {
+          var a = document.getElementById(st.aid);
+          a.currentTime = (now - st.t) / 1000;
+          a.play();
+        }
       }
     });
   }
+  function generateBackground(ctx) {
+    var buf = new AudioBuffer({sampleRate: 22050, length: 44100});
+    var samples = buf.getChannelData(0);
+    for (var i = 0; i < samples.length; i++) {
+      samples[i] = (Math.random() - 0.5) * 0.025;
+    }
+    return new AudioBufferSourceNode(ctx, {buffer: buf, loop: true});
+  }
+  function updateVolume() {
+    var newGain = unmute.checked ? volume.value / 50 : 0;
+    if (audioContext == null) {
+      if (unmute.checked) {
+        audioContext = new AudioContext();
+        audioVolume = new GainNode(audioContext, {gain: newGain});
+        audioVolume.connect(audioContext.destination);
+        var background = generateBackground(audioContext);
+        background.connect(audioVolume);
+        for (var i = 0; i <= 9; i++) {
+          ['c', 'f'].forEach(function(v) {
+            var element = document.getElementById('a-d' + i + v);
+            var src = audioContext.createMediaElementSource(element);
+            src.connect(audioVolume);
+            audioSources['d' + i + v] = element;
+          });
+        }
+        audioContext.resume();
+        background.start();
+      } else {
+        return;
+      }
+    }
+    audioVolume.gain.value = newGain;
+  }
   var main = document.getElementById('main');
-  var now = Date.now();
+  var unmute = document.getElementById('unmute');
+  var volume = document.getElementById('volume');
+  var audioContext = null;
+  var audioSources = {};
+  var audioVolume = null;
+  unmute.addEventListener('click', updateVolume);
+  volume.addEventListener('input', updateVolume);
+  unmute.checked = false;
   update(Math.floor(Date.now() / 5000) * 5);
 }
 window.addEventListener('DOMContentLoaded', main)
     </script>
   </head>
   <body>
-<main id="main">.....</main>
+<main id="main">     </main>
+<aside>
+  <label>
+    <input type="checkbox" id="unmute"/>
+    <span class="clickable when-unchecked">&#x1f507;</span>
+    <span class="clickable when-checked">&#x1f50a;</span>
+    <input type="range" id="volume" class="when-checked" step="any"/>
+  </label>
+</aside>
+<div class="hidden">
+  <audio id="a-d0c" src="d0c.mp3" preload="auto"></audio>
+  <audio id="a-d0f" src="d0f.mp3" preload="auto"></audio>
+  <audio id="a-d1c" src="d1c.mp3" preload="auto"></audio>
+  <audio id="a-d1f" src="d1f.mp3" preload="auto"></audio>
+  <audio id="a-d2c" src="d2c.mp3" preload="auto"></audio>
+  <audio id="a-d2f" src="d2f.mp3" preload="auto"></audio>
+  <audio id="a-d3c" src="d3c.mp3" preload="auto"></audio>
+  <audio id="a-d3f" src="d3f.mp3" preload="auto"></audio>
+  <audio id="a-d4c" src="d4c.mp3" preload="auto"></audio>
+  <audio id="a-d4f" src="d4f.mp3" preload="auto"></audio>
+  <audio id="a-d5c" src="d5c.mp3" preload="auto"></audio>
+  <audio id="a-d5f" src="d5f.mp3" preload="auto"></audio>
+  <audio id="a-d6c" src="d6c.mp3" preload="auto"></audio>
+  <audio id="a-d6f" src="d6f.mp3" preload="auto"></audio>
+  <audio id="a-d7c" src="d7c.mp3" preload="auto"></audio>
+  <audio id="a-d7f" src="d7f.mp3" preload="auto"></audio>
+  <audio id="a-d8c" src="d8c.mp3" preload="auto"></audio>
+  <audio id="a-d8f" src="d8f.mp3" preload="auto"></audio>
+  <audio id="a-d9c" src="d9c.mp3" preload="auto"></audio>
+  <audio id="a-d9f" src="d9f.mp3" preload="auto"></audio>
+</div>
   </body>
 </html>
