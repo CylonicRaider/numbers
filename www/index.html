@@ -10,8 +10,64 @@ body { position: fixed; top: 0; left: 0; bottom: 0; right: 0; display: flex;
 main { font: 20vmin/1 monospace; text-shadow: 0 0 2vmin gray;
   white-space: pre; }
     </style>
+    <script type="application/javascript">
+function main() {
+  function rightpad(s, l, c) {
+    if (c == null) c = ' ';
+    while (s.length < l) s += c;
+    return s;
+  }
+  function update(ts) {
+    var xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState != XMLHttpRequest.DONE) {
+        return;
+      } else if (xhr.status >= 200 && xhr.status < 300) {
+        applyUpdate(ts, new URLSearchParams(xhr.response));
+      } else {
+        console.error(xhr);
+        applyUpdate(ts, null);
+      }
+    };
+    xhr.open("GET", "data?t=" + ts, true);
+    xhr.send();
+  }
+  function applyUpdate(ts, result) {
+    var now = Date.now(), bt = ts * 1000;
+    if (result != null) {
+      var data = result.get('d');
+      renderStates(data.split('').map(function(ch, i) {
+        return {t: bt + i * 800, d: rightpad(data.substr(0, i + 1), 5)};
+      }), now);
+    } else {
+      renderStates([{t: bt, d: '     '}], now);
+    }
+    setTimeout(update, Math.max((ts + 4) * 1000 - now, 0), ts + 5);
+  }
+  function renderStates(states, now) {
+    for (var i = 1; i <= states.length; i++) {
+      states[i - 1].x = (i == states.length) ? Infinity : states[i].t;
+    }
+    states.forEach(function(st) {
+      if (st.x < now) {
+        return;
+      } else if (st.t > now) {
+        setTimeout(function() {
+          main.textContent = st.d;
+        }, st.t - now);
+      } else {
+        main.textContent = st.d;
+      }
+    });
+  }
+  var main = document.getElementById('main');
+  var now = Date.now();
+  update(Math.floor(Date.now() / 5000) * 5);
+}
+window.addEventListener('DOMContentLoaded', main)
+    </script>
   </head>
   <body>
-<main>.....</main>
+<main id="main">.....</main>
   </body>
 </html>
