@@ -10,8 +10,8 @@ body { position: fixed; top: 0; left: 0; bottom: 0; right: 0; display: flex;
 main { font: 20vmin/1 monospace; text-shadow: 0 0 2vmin gray;
   white-space: pre; }
 .hidden { display: none; }
-aside { position: fixed; bottom: 3vmin; left: 3vmin; font-size: 3vmin;
-  opacity: 0.25; transition: opacity linear 0.1s; }
+aside { position: fixed; bottom: 3vmin; left: 3vmin; display: flex;
+  font-size: 3vmin; opacity: 0.25; transition: opacity linear 0.1s; }
 aside:hover { opacity: 1; }
 label { display: flex; align-items: center; height: 5vmin; }
 input[type=checkbox] { display: none; }
@@ -139,6 +139,10 @@ window.addEventListener('DOMContentLoaded', main)
     <span class="clickable when-checked">&#x1f50a;</span>
     <input type="range" id="volume" class="when-checked" step="any"/>
   </label>
+  <form action="data" method="POST">
+    <input type="text" name="d" required="required"
+           pattern="\s*\d{5}(\s+\d{5}){0,10}\s*"/>
+  </form>
 </aside>
 <div class="hidden">
   <audio id="a-d0c" src="d0c.mp3" preload="auto"></audio>

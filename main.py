@@ -1,22 +1,51 @@
 #!/usr/bin/env python3
 # -*- coding: ascii -*-
 
-import os, time, inspect
+import os, re, time, inspect
 import random
 import urllib.parse
 import wsgif
 
 THIS_DIR = os.path.abspath(os.path.dirname(inspect.getfile(lambda: None)))
 
+VALID_UPLOAD = re.compile(r'\s*\d{5}(\s+\d{5}){,10}\s*')
+
 RANDOM = random.SystemRandom()
 
 class NumberSupply:
     def __init__(self):
         self.current = [None, None, None, None]
+        self.queued = {}
+
+    def _available_indices(self):
+        idx = self.current[0] + 10
+        while 1:
+            if not idx % 60 or idx in self.queued:
+                idx += 5
+                continue
+            for offset in range(1, 12):
+                si = idx + 5 * offset
+                if si % 60 and si not in self.queued: continue
+                yield (idx, offset)
+                break
+            idx = si + 5
+
+    def add_values(self, values, now=None):
+        if self.current[0] is None:
+            if now is None: now = time.time()
+            self.update_values(now)
+        assert len(values) <= 11
+        for idx, count in self._available_indices():
+            if count < len(values): continue
+            for offset, v in enumerate(values):
+                self.queued[idx + 5 * offset] = v
+            break
 
     def generate_value(self, index):
         if index % 60 == 0:
             return '31337'
+        elif index in self.queued:
+            return self.queued.pop(index)
         else:
             return format(RANDOM.randrange(100000), '05')
 
@@ -79,6 +108,19 @@ def handle_data(app):
                              content_type='application/x-www-form-urlencoded')
     else:
         return app.send_code(result[0], result[1])
+
+@route('/data', method='POST')
+def handle_data_post(app):
+    body = app.request_body.read(128)
+    if len(body) >= 128:
+        return app.send_code(400, '400 Bad Request')
+    raw_fields = urllib.parse.parse_qs(body.decode('utf-8', errors='replace'))
+    fields = {k: v[-1] for k, v in raw_fields.items()}
+    m = VALID_UPLOAD.match(fields.get('d', ''))
+    if not m:
+        return app.send_code(400, '400 Bad Request')
+    THE_NUMBERS.add_values(m.group(0).split())
+    return app.send_code(200, '200 OK')
 
 @route('/*')
 def handle_statics(app):
