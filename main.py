@@ -3,6 +3,7 @@
 
 import os, time, inspect
 import random
+import urllib.parse
 import wsgif
 
 THIS_DIR = os.path.abspath(os.path.dirname(inspect.getfile(lambda: None)))
@@ -43,9 +44,9 @@ class NumberSupply:
 
         base_index = self.current[0]
         if index == base_index:
-            return (200, self.current[1])
+            return (200, base_index, self.current[1])
         elif index == base_index + 5:
-            return (200, self.current[2])
+            return (200, base_index + 5, self.current[2])
         elif index < base_index and index % 5 == 0:
             return (410, '410 Gone')
         else:
@@ -58,6 +59,24 @@ route = wsgif.RouteBuilder()
 @route('/')
 def handle_root(app):
     return app.send_code(200, 'Hello World!')
+
+@route('/data')
+def handle_data(app):
+    raw_index = app.query_vars.get('t')
+    if not raw_index:
+        return app.send_code(400, '400 Bad Request')
+    try:
+        index = int(raw_index)
+    except ValueError:
+        return app.send_code(400, '400 Bad Request')
+    result = THE_NUMBERS.get_value(index)
+    if result[0] == 200:
+        index, value = result[1:]
+        return app.send_code(200,  urllib.parse.urlencode((('t', index),
+                                                           ('d', value))),
+                             content_type='application/x-www-form-urlencoded')
+    else:
+        return app.send_code(result[0], result[1])
 
 route.fallback(route.fixed(404))
 
