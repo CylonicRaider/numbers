@@ -63,13 +63,15 @@ def handle_root(app):
 @route('/data')
 def handle_data(app):
     raw_index = app.query_vars.get('t')
+    now = None
     if not raw_index:
-        return app.send_code(400, '400 Bad Request')
+        now = time.time()
+        raw_index = int(now / 5) * 5
     try:
         index = int(raw_index)
     except ValueError:
         return app.send_code(400, '400 Bad Request')
-    result = THE_NUMBERS.get_value(index)
+    result = THE_NUMBERS.get_value(index, now=now)
     if result[0] == 200:
         index, value = result[1:]
         return app.send_code(200,  urllib.parse.urlencode((('t', index),
