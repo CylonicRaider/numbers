@@ -58,7 +58,7 @@ route = wsgif.RouteBuilder()
 
 @route('/')
 def handle_root(app):
-    return app.send_code(200, 'Hello World!')
+    return app.send_static('/index.html')
 
 @route('/data')
 def handle_data(app):
@@ -79,6 +79,10 @@ def handle_data(app):
                              content_type='application/x-www-form-urlencoded')
     else:
         return app.send_code(result[0], result[1])
+
+@route('/*')
+def handle_statics(app):
+    return app.send_static(app.path)
 
 route.fallback(route.fixed(404))
 
