@@ -73,13 +73,25 @@ class NumberSupply:
 
         base_index = self.current[0]
         if index == base_index:
-            return (200, base_index, self.current[1])
+            return {'code': 200,
+                    'data': {'t': base_index, 'd': self.current[1]},
+                    'expires': base_index + 8}
         elif index == base_index + 5:
-            return (200, base_index + 5, self.current[2])
-        elif index < base_index and index % 5 == 0:
-            return (410, '410 Gone')
+            return {'code': 200,
+                    'data': {'t': base_index + 5, 'd': self.current[2]},
+                    'expires': base_index + 13}
+        elif index % 5 != 0:
+            return {'code': 404,
+                    'text': '404 Not Found',
+                    'expires': max(index, now) + 3600}
+        elif index < base_index:
+            return {'code': 410,
+                    'text': '410 Gone',
+                    'expires': max(index, now) + 3600}
         else:
-            return (404, '404 Not Found')
+            return {'code': 404,
+                    'text': '404 Not Found',
+                    'expires': index - 2}
 
 THE_NUMBERS = NumberSupply()
 
@@ -92,22 +104,22 @@ def handle_root(app):
 @route('/data')
 def handle_data(app):
     raw_index = app.query_vars.get('t')
-    now = None
+    now = time.time()
     if not raw_index:
-        now = time.time()
         raw_index = int(now / 5) * 5
     try:
         index = int(raw_index)
     except ValueError:
         return app.send_code(400, '400 Bad Request')
     result = THE_NUMBERS.get_value(index, now=now)
-    if result[0] == 200:
-        index, value = result[1:]
-        return app.send_code(200,  urllib.parse.urlencode((('t', index),
-                                                           ('d', value))),
+    max_age = max(int(result['expires'] - now), 0)
+    app.add_header('Cache-Control', 'max-age={}'.format(max_age))
+    if result['code'] == 200:
+        body = urllib.parse.urlencode(result['data'])
+        return app.send_code(result['code'], body,
                              content_type='application/x-www-form-urlencoded')
     else:
-        return app.send_code(result[0], result[1])
+        return app.send_code(result['code'], result['text'])
 
 @route('/data', method='POST')
 def handle_data_post(app):
