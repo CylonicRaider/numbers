@@ -8,7 +8,7 @@ import wsgif
 
 THIS_DIR = os.path.abspath(os.path.dirname(inspect.getfile(lambda: None)))
 
-VALID_UPLOAD = re.compile(r'\s*\d{5}(\s+\d{5}){,10}\s*')
+VALID_UPLOAD = re.compile(r'\s*[0-9A-Z]{5}(\s+[0-9A-Z]{5}){,10}\s*')
 
 RANDOM = random.SystemRandom()
 

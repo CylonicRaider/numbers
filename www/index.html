@@ -59,16 +59,19 @@ function main() {
       var st = states[i - 1];
       st.x = (i == states.length) ? Infinity : states[i].t;
       st.aid = !st.a ? null :
-        'a-d' + st.a + (i == states.length ? 'f' : 'c');
+        'a-d' + st.a.toLowerCase() + (i == states.length ? 'f' : 'c');
     }
     states.forEach(function(st, i) {
+      if (st.aid && hasAudio) {
+        loadAudio(st.aid);
+      }
       if (st.x < now) {
         return;
       } else if (st.t > now) {
         setTimeout(function() {
           main.textContent = st.d;
           if (st.aid && hasAudio) {
-            var a = document.getElementById(st.aid);
+            var a = loadAudio(st.aid);
             a.currentTime = 0;
             a.play();
           }
@@ -76,7 +79,7 @@ function main() {
       } else {
         main.textContent = st.d;
         if (st.aid && hasAudio) {
-          var a = document.getElementById(st.aid);
+          var a = loadAudio(st.aid);
           a.currentTime = (now - st.t) / 1000;
           a.play();
         }
@@ -91,6 +94,19 @@ function main() {
     }
     return new AudioBufferSourceNode(ctx, {buffer: buf, loop: true});
   }
+  function loadAudio(aid) {
+    var node = document.getElementById(aid);
+    if (node) return node;
+    node = document.createElement('audio');
+    node.id = aid;
+    node.src = aid.replace(/^a-/, '') + '.mp3';
+    node.preload = 'auto';
+    document.getElementById('audio').append(node);
+    if (audioContext != null) {
+      audioContext.createMediaElementSource(node).connect(audioVolume);
+    }
+    return node;
+  }
   function updateVolume() {
     var newGain = unmute.checked ? volume.value / 50 : 0;
     if (audioContext == null) {
@@ -103,14 +119,10 @@ function main() {
         audioVolume.connect(audioContext.destination);
         var background = generateBackground(audioContext);
         background.connect(audioVolume);
-        for (var i = 0; i <= 9; i++) {
-          ['c', 'f'].forEach(function(v) {
-            var element = document.getElementById('a-d' + i + v);
-            var src = audioContext.createMediaElementSource(element);
-            src.connect(audioVolume);
-            audioSources['d' + i + v] = element;
-          });
-        }
+        var elements = document.getElementById('audio').children;
+        Array.prototype.forEach.call(elements, function(el) {
+          audioContext.createMediaElementSource(el).connect(audioVolume);
+        });
         background.start();
         audioContext.resume();
       } else {
@@ -125,7 +137,6 @@ function main() {
   var unmute = document.getElementById('unmute');
   var volume = document.getElementById('volume');
   var audioContext = null;
-  var audioSources = {};
   var audioVolume = null;
   var hasAudio = false;
   unmute.addEventListener('click', updateVolume);
@@ -155,27 +166,6 @@ window.addEventListener('DOMContentLoaded', main)
            pattern="\s*\d{5}(\s+\d{5}){0,10}\s*"/>
   </form>-->
 </aside>
-<div class="hidden">
-  <audio id="a-d0c" src="d0c.mp3" preload="auto"></audio>
-  <audio id="a-d0f" src="d0f.mp3" preload="auto"></audio>
-  <audio id="a-d1c" src="d1c.mp3" preload="auto"></audio>
-  <audio id="a-d1f" src="d1f.mp3" preload="auto"></audio>
-  <audio id="a-d2c" src="d2c.mp3" preload="auto"></audio>
-  <audio id="a-d2f" src="d2f.mp3" preload="auto"></audio>
-  <audio id="a-d3c" src="d3c.mp3" preload="auto"></audio>
-  <audio id="a-d3f" src="d3f.mp3" preload="auto"></audio>
-  <audio id="a-d4c" src="d4c.mp3" preload="auto"></audio>
-  <audio id="a-d4f" src="d4f.mp3" preload="auto"></audio>
-  <audio id="a-d5c" src="d5c.mp3" preload="auto"></audio>
-  <audio id="a-d5f" src="d5f.mp3" preload="auto"></audio>
-  <audio id="a-d6c" src="d6c.mp3" preload="auto"></audio>
-  <audio id="a-d6f" src="d6f.mp3" preload="auto"></audio>
-  <audio id="a-d7c" src="d7c.mp3" preload="auto"></audio>
-  <audio id="a-d7f" src="d7f.mp3" preload="auto"></audio>
-  <audio id="a-d8c" src="d8c.mp3" preload="auto"></audio>
-  <audio id="a-d8f" src="d8f.mp3" preload="auto"></audio>
-  <audio id="a-d9c" src="d9c.mp3" preload="auto"></audio>
-  <audio id="a-d9f" src="d9f.mp3" preload="auto"></audio>
-</div>
+<div id="audio" class="hidden"></div>
   </body>
 </html>
