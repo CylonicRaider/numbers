@@ -63,7 +63,7 @@ def main():
     a = p.parse_args()
 
     if a.submit is not None:
-        code, body = do_upload(a.url, a.submit)
+        code, body = do_upload(a.url, a.submit.upper())
         if code == 200:
             print('OK')
         else:
