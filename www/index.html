@@ -46,52 +46,47 @@ function main() {
     var now = Date.now(), bt = ts * 1000;
     if (result != null) {
       var data = result.get('d');
-      renderStates(data.split('').map(function(ch, i) {
-        return {t: bt + i * 800, d: rightpad(data.substr(0, i + 1), 5),
-                a: ch};
-      }), now);
+      data.split('').forEach(function(ch, i) {
+        var aid = 'a-d' + ch.toLowerCase() +
+                  (i == data.length - 1 ? 'f' : 'c');
+        loadAudio(aid);
+        playoutQueue.push({t: bt + i * 800,
+                           d: rightpad(data.substr(0, i + 1), 5),
+                           a: aid});
+      });
     } else {
-      renderStates([{t: bt, d: '     '}], now);
+      playoutQueue.push({t: bt});
     }
+    render();
     setTimeout(update, Math.max((ts + 4) * 1000 - now, 0), ts + 5);
   }
   function renderText(text) {
+    var title = useTitle ? text || '31337' : '31337';
+    if (!text) text = '     ';
     main.textContent = text;
-    if (useTitle) {
-      document.title = /^\s*$/.test(text) ? '31337' : text;
-    }
+    document.title = title;
   }
-  function renderStates(states, now) {
-    for (var i = 1; i <= states.length; i++) {
-      var st = states[i - 1];
-      st.x = (i == states.length) ? Infinity : states[i].t;
-      st.aid = !st.a ? null :
-        'a-d' + st.a.toLowerCase() + (i == states.length ? 'f' : 'c');
+  function renderAudio(aid, t, now) {
+    if (!hasAudio || !aid) return;
+    var node = loadAudio(aid);
+    node.currentTime = (now - t) / 1000;
+    node.play();
+  }
+  function render() {
+    var now = Date.now();
+    while (playoutQueue.length > 1 && playoutQueue[1].t <= now) {
+      playoutQueue.shift();
     }
-    states.forEach(function(st, i) {
-      if (st.aid && hasAudio) {
-        loadAudio(st.aid);
-      }
-      if (st.x < now) {
-        return;
-      } else if (st.t > now) {
-        setTimeout(function() {
-          renderText(st.d);
-          if (st.aid && hasAudio) {
-            var a = loadAudio(st.aid);
-            a.currentTime = 0;
-            a.play();
-          }
-        }, st.t - now);
-      } else {
-        renderText(st.d);
-        if (st.aid && hasAudio) {
-          var a = loadAudio(st.aid);
-          a.currentTime = (now - st.t) / 1000;
-          a.play();
-        }
-      }
-    });
+    var st = playoutQueue[0];
+    renderText(st.d);
+    renderAudio(st.a, st.t, now);
+    if (!updateScheduled && playoutQueue.length > 1) {
+      updateScheduled = true;
+      setTimeout(function() {
+        updateScheduled = false;
+        render();
+      }, Math.max(playoutQueue[1].t - now, 0));
+    }
   }
   function generateBackground(ctx) {
     var buf = new AudioBuffer({sampleRate: 22050, length: 44100});
@@ -116,7 +111,7 @@ function main() {
   }
   function updateTitle() {
     useTitle = title.checked;
-    if (!useTitle) document.title = '31337';
+    render();
   }
   function updateVolume() {
     var newGain = unmute.checked ? volume.value / 50 : 0;
@@ -124,7 +119,10 @@ function main() {
       if (unmute.checked) {
         audioContext = new AudioContext();
         audioContext.addEventListener('statechange', function(evt) {
-          if (audioContext.state == 'running' && !hasAudio) hasAudio = true;
+          if (audioContext.state == 'running' && !hasAudio) {
+            hasAudio = true;
+            render();
+          }
         });
         audioVolume = new GainNode(audioContext, {gain: newGain});
         audioVolume.connect(audioContext.destination);
@@ -141,6 +139,7 @@ function main() {
       }
     } else if (!hasAudio && unmute.checked) {
       audioContext.resume();
+      render();
     }
     audioVolume.gain.value = newGain;
   }
@@ -152,6 +151,8 @@ function main() {
   var audioContext = null;
   var audioVolume = null;
   var hasAudio = false;
+  var playoutQueue = [{t: Date.now()}];
+  var updateScheduled = false;
   title.addEventListener('click', updateTitle);
   unmute.addEventListener('click', updateVolume);
   volume.addEventListener('input', updateVolume);
