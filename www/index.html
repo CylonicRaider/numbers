@@ -63,14 +63,15 @@ function main() {
   function renderText(text) {
     var title = useTitle ? text || '31337' : '31337';
     if (!text) text = '     ';
-    main.textContent = text;
-    document.title = title;
+    if (main.textContent != text) main.textContent = text;
+    if (document.title != title) document.title = title;
   }
   function renderAudio(aid, t, now) {
-    if (!hasAudio || !aid) return;
+    if (!hasAudio || !aid || (aid == curAudio.a && t == curAudio.t)) return;
     var node = loadAudio(aid);
     node.currentTime = (now - t) / 1000;
     node.play();
+    curAudio = {a: aid, t: t};
   }
   function render() {
     var now = Date.now();
@@ -152,6 +153,7 @@ function main() {
   var audioVolume = null;
   var hasAudio = false;
   var playoutQueue = [{t: Date.now()}];
+  var curAudio = {a: null, t: null};
   var updateScheduled = false;
   title.addEventListener('click', updateTitle);
   unmute.addEventListener('click', updateVolume);
