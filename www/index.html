@@ -43,7 +43,7 @@ function main() {
     xhr.send();
   }
   function applyUpdate(ts, result) {
-    var now = Date.now(), bt = ts * 1000;
+    var bt = ts * 1000;
     if (result != null) {
       var data = result.get('d');
       data.split('').forEach(function(ch, i) {
@@ -58,7 +58,7 @@ function main() {
       playoutQueue.push({t: bt});
     }
     render();
-    setTimeout(update, Math.max((ts + 4) * 1000 - now, 0), ts + 5);
+    setTimeout(update, Math.max((ts + 4) * 1000 - Date.now(), 0), ts + 5);
   }
   function renderText(text) {
     var title = useTitle ? text || '31337' : '31337';
@@ -86,7 +86,7 @@ function main() {
       setTimeout(function() {
         updateScheduled = false;
         render();
-      }, Math.max(playoutQueue[1].t - now, 0));
+      }, Math.max(playoutQueue[1].t - Date.now(), 0));
     }
   }
   function generateBackground(ctx) {
