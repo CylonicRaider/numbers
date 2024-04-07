@@ -10,14 +10,17 @@ body { position: fixed; top: 0; left: 0; bottom: 0; right: 0; display: flex;
 main { font: 20vmin/1 font, monospace; text-shadow: 0 0 2vmin gray;
   white-space: pre; }
 .hidden { display: none; }
-aside { position: fixed; bottom: 3vmin; left: 3vmin; display: flex;
-  font-size: 3vmin; opacity: 0.25; transition: opacity linear 0.1s; }
+aside { position: fixed; bottom: 3vmin; left: 3vmin; right: 3vmin;
+  display: flex; font-size: 3vmin; opacity: 0.25;
+  transition: opacity linear 0.1s; }
 aside:hover { opacity: 1; }
+a { align-self: center; }
 label { display: flex; align-items: center; height: 5vmin; }
 input[type=checkbox] { display: none; }
 input[type=checkbox]:checked ~ .when-unchecked { display: none; }
 input[type=checkbox]:not(:checked) ~ .when-checked { display: none; }
 .clickable { cursor: pointer; }
+#input { display: none; margin-left: auto; }
 @font-face { font-family: font; src: url(font.woff); }
     </style>
     <script type="application/javascript">
@@ -158,6 +161,10 @@ function main() {
   title.addEventListener('click', updateTitle);
   unmute.addEventListener('click', updateVolume);
   volume.addEventListener('input', updateVolume);
+  document.getElementById('show-input').addEventListener('click', function() {
+    this.style.display = 'none';
+    document.getElementById('input').style.display = 'block';
+  });
   updateTitle();
   updateVolume();
   if (unmute.checked) {
@@ -173,6 +180,7 @@ window.addEventListener('DOMContentLoaded', main);
   <body>
 <main id="main">     </main>
 <aside>
+  <a id="show-input" class="clickable">&#x1f4dc;</a>
   <label>
     <input type="checkbox" id="title"/>
     <span class="clickable when-unchecked">&#x1f512;</span>
@@ -184,10 +192,10 @@ window.addEventListener('DOMContentLoaded', main);
     <span class="clickable when-checked">&#x1f50a;</span>
     <input type="range" id="volume" class="when-checked" step="any"/>
   </label>
-  <!--<form action="data" method="POST">
+  <form id="input" action="data" method="POST">
     <input type="text" name="d" required="required"
            pattern="\s*[0-9A-Z]{5}(\s+[0-9A-Z]{5}){0,10}\s*"/>
-  </form>-->
+  </form>
 </aside>
 <div id="audio" class="hidden"></div>
   </body>
