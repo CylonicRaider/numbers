@@ -14,13 +14,12 @@ aside { position: fixed; bottom: 3vmin; left: 3vmin; right: 3vmin;
   display: flex; font-size: 3vmin; opacity: 0.25;
   transition: opacity linear 0.1s; }
 aside:hover { opacity: 1; }
-a { align-self: center; }
-label { display: flex; align-items: center; height: 5vmin; }
+label, form { display: flex; align-items: center; height: 5vmin; }
 input[type=checkbox] { display: none; }
 input[type=checkbox]:checked ~ .when-unchecked { display: none; }
 input[type=checkbox]:not(:checked) ~ .when-checked { display: none; }
 .clickable { cursor: pointer; }
-#input { display: none; margin-left: auto; }
+.spacer { margin: auto; }
 @font-face { font-family: font; src: url(font.woff); }
     </style>
     <script type="application/javascript">
@@ -147,10 +146,15 @@ function main() {
     }
     audioVolume.gain.value = newGain;
   }
+  function updateInput() {
+    input.classList.toggle('hidden', !showInput.checked);
+  }
   var main = document.getElementById('main');
   var title = document.getElementById('title');
   var unmute = document.getElementById('unmute');
   var volume = document.getElementById('volume');
+  var showInput = document.getElementById('show-input');
+  var input = document.getElementById('input');
   var useTitle = false;
   var audioContext = null;
   var audioVolume = null;
@@ -161,12 +165,10 @@ function main() {
   title.addEventListener('click', updateTitle);
   unmute.addEventListener('click', updateVolume);
   volume.addEventListener('input', updateVolume);
-  document.getElementById('show-input').addEventListener('click', function() {
-    this.style.display = 'none';
-    document.getElementById('input').style.display = 'block';
-  });
+  showInput.addEventListener('click', updateInput);
   updateTitle();
   updateVolume();
+  updateInput();
   if (unmute.checked) {
     setTimeout(function() {
       if (!hasAudio) unmute.checked = false;
@@ -180,7 +182,6 @@ window.addEventListener('DOMContentLoaded', main);
   <body>
 <main id="main">     </main>
 <aside>
-  <a id="show-input" class="clickable">&#x1f4dc;</a>
   <label>
     <input type="checkbox" id="title"/>
     <span class="clickable when-unchecked">&#x1f512;</span>
@@ -192,10 +193,16 @@ window.addEventListener('DOMContentLoaded', main);
     <span class="clickable when-checked">&#x1f50a;</span>
     <input type="range" id="volume" class="when-checked" step="any"/>
   </label>
-  <form id="input" action="data" method="POST">
+  <span class="spacer"></span>
+  <form id="input" class="hidden" action="data" method="POST">
     <input type="text" name="d" required="required"
            pattern="\s*[0-9A-Z]{5}(\s+[0-9A-Z]{5}){0,10}\s*"/>
   </form>
+  <label>
+    <input type="checkbox" id="show-input"/>
+    <span class="clickable when-unchecked">&#x1f4dc;</span>
+    <span class="clickable when-checked">&#x274c;</span>
+  </label>
 </aside>
 <div id="audio" class="hidden"></div>
   </body>
