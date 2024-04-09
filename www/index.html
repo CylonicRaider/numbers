@@ -9,17 +9,22 @@ body { position: fixed; top: 0; left: 0; bottom: 0; right: 0; display: flex;
   align-items: center; justify-content: center; }
 main { font: 20vmin/1 font, monospace; text-shadow: 0 0 2vmin gray;
   white-space: pre; }
-.hidden { display: none; }
 aside { position: fixed; bottom: 3vmin; left: 3vmin; right: 3vmin;
   display: flex; font-size: 3vmin; opacity: 0.25;
   transition: opacity linear 0.1s; }
 aside:hover { opacity: 1; }
 label, form { display: flex; align-items: center; height: 5vmin; }
+.hidden { display: none; }
+.clickable { cursor: pointer; }
+.spacer { margin: auto; }
 input[type=checkbox] { display: none; }
 input[type=checkbox]:checked ~ .when-unchecked { display: none; }
 input[type=checkbox]:not(:checked) ~ .when-checked { display: none; }
-.clickable { cursor: pointer; }
-.spacer { margin: auto; }
+input[type=text] { appearance: none; margin: 0; border: 1px solid gray;
+  padding: 0.1em; background: none; color: inherit;
+  font: 3vmin/1 font, monospace; }
+input[type=text]:focus { border-color: white; outline: 2px solid white; }
+#input { margin-right: 1vmin; }
 @font-face { font-family: font; src: url(font.woff); }
     </style>
     <script type="application/javascript">
