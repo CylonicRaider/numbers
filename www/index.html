@@ -34,20 +34,28 @@ function main() {
     while (s.length < l) s += c;
     return s;
   }
-  function update(ts) {
+  function doXHR(url, post, cb) {
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function() {
       if (xhr.readyState != XMLHttpRequest.DONE) {
         return;
+      } else if (!cb) {
+        return;
       } else if (xhr.status >= 200 && xhr.status < 300) {
-        applyUpdate(ts, new URLSearchParams(xhr.response));
+        cb(xhr, true);
       } else {
         console.error(xhr);
-        applyUpdate(ts, null);
+        cb(xhr, false);
       }
     };
-    xhr.open("GET", "data?t=" + ts, true);
-    xhr.send();
+    xhr.open((post == null ? "GET" : "POST"), url, true);
+    xhr.send(post);
+    return xhr;
+  }
+  function update(ts) {
+    doXHR("data?t=" + ts, null, function(xhr, ok) {
+      applyUpdate(ts, (ok ? new URLSearchParams(xhr.response) : null));
+    });
   }
   function applyUpdate(ts, result) {
     var bt = ts * 1000;
@@ -171,6 +179,11 @@ function main() {
   unmute.addEventListener('click', updateVolume);
   volume.addEventListener('input', updateVolume);
   showInput.addEventListener('click', updateInput);
+  input.addEventListener('submit', function(event) {
+    event.preventDefault();
+    doXHR(this.action, new URLSearchParams(new FormData(this)));
+    this.reset();
+  });
   updateTitle();
   updateVolume();
   updateInput();
