@@ -2,6 +2,7 @@
 # -*- coding: ascii -*-
 
 import os, re, time, inspect
+import collections
 import random
 import urllib.parse
 import wsgif
@@ -12,13 +13,12 @@ VALID_UPLOAD = re.compile(r'\A\s*[0-9A-Z]{5}(\s+[0-9A-Z]{5}){,10}\s*\Z')
 
 RANDOM = random.SystemRandom()
 
-class NumberSupply:
+class NumberQueue:
     def __init__(self):
-        self.current = [None, None, None, None]
         self.queued = {}
+        self.queued_range = None
 
-    def _available_indices(self):
-        idx = self.current[0] + 10
+    def _available_indices(self, idx):
         while 1:
             if not idx % 60 or idx in self.queued:
                 idx += 5
@@ -30,28 +30,59 @@ class NumberSupply:
                 break
             idx = si + 5
 
-    def add_values(self, values, now=None):
-        if self.current[0] is None:
-            if now is None: now = time.time()
-            self.update_values(now)
+    def _update_range(self, add_range):
+        if self.queued_range is None:
+            self.queued_range = add_range
+        else:
+            self.queued_range = [min(self.queued_range[0], add_range[0]),
+                                 max(self.queued_range[1], add_range[1])]
+
+    def add(self, values, start_idx):
         assert len(values) <= 11
-        for idx, count in self._available_indices():
+        for idx, count in self._available_indices(start_idx):
             if count < len(values): continue
             for offset, v in enumerate(values):
                 self.queued[idx + 5 * offset] = v
+            self._update_range([idx, idx + 5 * len(values)])
             break
+
+    def pop(self, idx):
+        if self.queued_range is None:
+            return None
+
+        if idx >= self.queued_range[1]:
+            self.queued.clear()
+            self.queued_range = None
+        elif idx > self.queued_range[0]:
+            for idx in range(self.queued_range[0], idx, 5):
+                self.queued.pop(idx, None)
+            self.queued_range[0] = idx + 5
+        else:
+            self.queued_range[0] = max(self.queued_range[0],
+                                       idx + 5)
+
+        return self.queued.pop(idx, None)
+
+class NumberSupply:
+    def __init__(self):
+        self.current = [None, None, None, None]
+        self.queue = NumberQueue()
+
+    def add_values(self, values, now=None):
+        if now is None: now = time.time()
+        self.update_values(now)
+        self.queue.add(values, self.current[0] + 10)
 
     def generate_value(self, index):
         if index % 60 == 0:
             return '31337'
-        elif index in self.queued:
-            return self.queued.pop(index)
-        else:
-            return format(RANDOM.randrange(100000), '05')
+        v = self.queue.pop(index)
+        if v is None:
+            v = format(RANDOM.randrange(100000), '05')
+        return v
 
     def update_values(self, now):
         next_index = int((now + 2) / 5) * 5
-
         if self.current[0] == next_index - 10:
             self.current[0] += 5
             self.current[1] = self.current[2]
@@ -62,7 +93,6 @@ class NumberSupply:
             self.current[2] = self.generate_value(next_index)
         else:
             return
-
         self.current[3] = self.current[0] + 8
 
     def get_value(self, index, now=None):
