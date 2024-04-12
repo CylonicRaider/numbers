@@ -4,6 +4,7 @@
 import os, re, time, inspect
 import collections
 import random
+import threading
 import urllib.parse
 import wsgif
 
@@ -67,11 +68,7 @@ class NumberSupply:
     def __init__(self):
         self.current = [None, None, None, None]
         self.queue = NumberQueue()
-
-    def add_values(self, values, now=None):
-        if now is None: now = time.time()
-        self.update_values(now)
-        self.queue.add(values, self.current[0] + 10)
+        self.lock = threading.RLock()
 
     def generate_value(self, index):
         if index % 60 == 0:
@@ -95,20 +92,28 @@ class NumberSupply:
             return
         self.current[3] = self.current[0] + 8
 
-    def get_value(self, index, now=None):
-        if now is None:
-            now = time.time()
-        if self.current[3] is None or now >= self.current[3]:
+    def add_values(self, values, now=None):
+        with self.lock:
+            if now is None: now = time.time()
             self.update_values(now)
+            self.queue.add(values, self.current[0] + 10)
 
-        base_index = self.current[0]
+    def get_value(self, index, now=None):
+        with self.lock:
+            if now is None:
+                now = time.time()
+            if self.current[3] is None or now >= self.current[3]:
+                self.update_values(now)
+            current = tuple(self.current)
+
+        base_index = current[0]
         if index == base_index:
             return {'code': 200,
-                    'data': {'t': base_index, 'd': self.current[1]},
+                    'data': {'t': base_index, 'd': current[1]},
                     'expires': base_index + 8}
         elif index == base_index + 5:
             return {'code': 200,
-                    'data': {'t': base_index + 5, 'd': self.current[2]},
+                    'data': {'t': base_index + 5, 'd': current[2]},
                     'expires': base_index + 13}
         elif index % 5 != 0:
             return {'code': 404,
