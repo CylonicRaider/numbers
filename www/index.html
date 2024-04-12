@@ -161,6 +161,7 @@ function main() {
   }
   function updateInput() {
     input.classList.toggle('hidden', !showInput.checked);
+    if (showInput.checked) input.querySelector('input').focus();
   }
   var main = document.getElementById('main');
   var title = document.getElementById('title');
