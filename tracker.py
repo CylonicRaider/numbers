@@ -3,16 +3,19 @@
 
 import time
 import argparse
-import urllib.parse, urllib.request
+import urllib.parse, urllib.request, urllib.error
 
 from main import VALID_UPLOAD
 
 DEFAULT_URL = 'https://31337.leet.nu/data'
 
 def request(url, post=None):
-    with urllib.request.urlopen(url, data=post) as resp:
-        body = resp.read()
-        return resp.status, body.decode('utf-8')
+    try:
+        with urllib.request.urlopen(url, data=post) as resp:
+            body = resp.read()
+            return resp.status, body.decode('utf-8')
+    except urllib.error.HTTPError as exc:
+        return exc.status, exc.fp.read().decode('utf-8')
 
 def format_time(ts):
     return time.strftime('%Y-%m-%d %H:%M:%S Z', time.gmtime(ts))
