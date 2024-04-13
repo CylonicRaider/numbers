@@ -3,6 +3,7 @@
 
 import sys, os, time
 import argparse
+import datetime
 import urllib.parse, urllib.request, urllib.error
 
 from main import VALID_UPLOAD
@@ -28,24 +29,25 @@ def request(url, post=None):
     except urllib.error.HTTPError as exc:
         return exc.status, exc.fp.read().decode('utf-8')
 
+def highlight(text, hlcode, color=True):
+    return f'\033[{hlcode}m{text}\033[0m' if color else text
+
 def format_timestamp(ts):
     return time.strftime('%Y-%m-%d %H:%M:%S Z', time.gmtime(ts))
 
 def format_text(text, note, color=False):
     if text is None:
-        return '\033[1;31m--/--\033[0m' if color else '--/--'
-    elif not color:
-        return text
-    elif note is None:
+        return highlight('--/--', '1;31', color)
+    elif not color or note is None:
         return text
 
     if note == 'sync word':
-        highlight = '2'
+        hlcode = '2'
     elif note.startswith('repeated'):
-        highlight = '32'
+        hlcode = '32'
     else:
-        highlight = '1'
-    return f'\033[{highlight}m{text}\033[0m'
+        hlcode = '1'
+    return highlight(text, hlcode)
 
 def track(base_url):
     ts = None
@@ -81,18 +83,42 @@ def track(base_url):
 def do_track(base_url, stream, color=False):
     color = resolve_color(color, stream)
     for ts, text, note in track(base_url):
-        ts_text = format_timestamp(ts)
-        ts_text = f'\033[2m{ts_text} ->\033[0m' if color else ts_text + ' ->'
+        ts_text = highlight(f'{format_timestamp(ts)} ->', '2', color)
         formatted_text = format_text(text, note, color=color)
-        if not note:
-            note_text = ''
-        elif color:
-            note_text = f' \033[36m[{note}]\033[0m'
-        else:
-            note_text = f' [{note}]'
-
+        note_text = ' ' + highlight(f'[{note}]', '36', color) if note else ''
         line = f'{ts_text} {formatted_text}{note_text}'
         print(line, file=stream)
+
+def do_track_fancy(base_url, stream, color=False):
+    color = resolve_color(color, stream)
+
+    heading = ('#      '  +
+               ' '.join(f' :{i:02} ' for i in range(0, 60, 5))).rstrip()
+    print(highlight(heading, '2', color), file=stream)
+
+    prev_date, prev_time, prev_second = None, None, None
+    for ts, text, note in track(base_url):
+        dt = datetime.datetime.fromtimestamp(ts, datetime.timezone.utc)
+        cur_date = dt.date()
+        cur_time = (dt.hour, dt.minute)
+        cur_second = dt.second
+
+        if cur_date != prev_date:
+            print(highlight(f'{dt:%Y-%m-%d}:', '35', color), file=stream)
+            prev_date = cur_date
+        if cur_time != prev_time:
+            print(highlight(f'{dt:%H:%M}:', '2;35', color), end='',
+                  file=stream)
+            prev_time = cur_time
+            prev_second = -5
+
+        if prev_second != cur_second - 5:
+            print('      ' * ((cur_second - prev_second) // 5 - 1), end='',
+                  file=stream)
+        formatted_text = format_text(text, note, color=color)
+        print(' ' + formatted_text, end=('\n' if cur_second == 55 else ''),
+              file=stream, flush=True)
+        prev_second = cur_second
 
 def do_upload(url, text):
     if not VALID_UPLOAD.match(text):
@@ -108,6 +134,9 @@ def main():
     p.add_argument('--color', choices=('never', 'always', 'auto'),
                    default='auto',
                    help='Decide whether to color-code output')
+    p.add_argument('--compact', '-c', action='store_true',
+                   help='Display tracking output in a compact human-readable '
+                        'manner')
     p.add_argument('submit', nargs='?',
                    help='Upload text instead of retrieving updates')
     a = p.parse_args()
@@ -118,6 +147,8 @@ def main():
             print('OK')
         else:
             print(f'ERROR {code}: {body}')
+    elif a.compact:
+        do_track_fancy(a.url, sys.stdout, color=a.color)
     else:
         do_track(a.url, sys.stdout, color=a.color)
 
