@@ -42,7 +42,9 @@ def format_text(text, note, color=False):
         return text
 
     if note == 'sync word':
-        hlcode = '2'
+        hlcode = '34'
+    elif note == 'wat?!':
+        hlcode = '1;33'
     elif note.startswith('repeated'):
         hlcode = '32'
     else:
