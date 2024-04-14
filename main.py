@@ -11,11 +11,14 @@ import wsgif
 THIS_DIR = os.path.abspath(os.path.dirname(inspect.getfile(lambda: None)))
 
 VALID_UPLOAD = re.compile(r'\A\s*[0-9A-Z]{5}(\s+[0-9A-Z]{5}){,10}\s*\Z')
+DEFAULT_MARKER = '31337'
 
 RANDOM = random.SystemRandom()
 
 class NumberQueue:
-    def __init__(self):
+    def __init__(self, marker=None):
+        if marker is None: marker = DEFAULT_MARKER
+        self.marker = marker
         self.queued = {}
         self.queued_range = None
 
@@ -48,6 +51,9 @@ class NumberQueue:
             break
 
     def pop(self, idx):
+        if idx % 60 == 0:
+            return self.marker
+
         if self.queued_range is None:
             return None
 
@@ -71,8 +77,6 @@ class NumberSupply:
         self.lock = threading.RLock()
 
     def generate_value(self, index):
-        if index % 60 == 0:
-            return '31337'
         v = self.queue.pop(index)
         if v is None:
             v = format(RANDOM.randrange(100000), '05')
