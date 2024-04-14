@@ -148,7 +148,10 @@ def main():
         else:
             print(f'ERROR {code}: {body}')
     elif a.compact:
-        do_track_fancy(a.url, sys.stdout, color=a.color)
+        try:
+            do_track_fancy(a.url, sys.stdout, color=a.color)
+        except KeyboardInterrupt:
+            print()
     else:
         do_track(a.url, sys.stdout, color=a.color)
 
