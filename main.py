@@ -55,8 +55,8 @@ class NumberQueue:
             self.queued.clear()
             self.queued_range = None
         elif idx > self.queued_range[0]:
-            for idx in range(self.queued_range[0], idx, 5):
-                self.queued.pop(idx, None)
+            for i in range(self.queued_range[0], idx, 5):
+                self.queued.pop(i, None)
             self.queued_range[0] = idx + 5
         else:
             self.queued_range[0] = max(self.queued_range[0],
