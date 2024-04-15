@@ -155,6 +155,9 @@ def main():
         except KeyboardInterrupt:
             print()
     else:
-        do_track(a.url, sys.stdout, color=a.color)
+        try:
+            do_track(a.url, sys.stdout, color=a.color)
+        except KeyboardInterrupt:
+            pass
 
 if __name__ == '__main__': main()
